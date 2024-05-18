@@ -65,7 +65,14 @@ def find_imgs_container(img_elements):
             parent_tag_imgs = find_imgs(parent_tag)
         
         return parent_tag.find_elements(By.XPATH, './*')
+
+def filter_button(text):
     
+    filter_list = ["상품", "사이즈", "size", "선택", "고시", "장바구니"]
+    
+    result = any(keyword in text for keyword in filter_list) or text == ""
+    
+    return result
 
 def movement(option_attrivute, option_container, title):    
     # grid grid-cols-6
@@ -75,16 +82,24 @@ def movement(option_attrivute, option_container, title):
     
     # 옵션 컨테이너
     container =  b.find_element(By.XPATH, f"//*[@{option_attrivute}='{option_container}']")
-    
-    options = container.find_elements(By.XPATH, './*')
-    
+    idontKnowWhyThisDo = container.find_elements(By.XPATH, "./*")
+       
     품절옵션 = []
     
     품절옵션.append(title)
     품절옵션.append(b.current_url)
     
     # select 태그 존재 여부 체크 
-    selects_tags = container.find_elements(By.XPATH, "//select")
+    
+    # selects_tags = container.find_elements(By.XPATH, "//select")
+    selects_tags = []
+    
+    for t in idontKnowWhyThisDo:
+        try:
+            select = t.find_element(By.XPATH, "//*/select")
+            selects_tags.append(select)
+        except Exception as e:
+            print("")
     
     # select 태그가 있을 경우 option 데이터 추출
     if len(selects_tags) > 0:
@@ -103,29 +118,32 @@ def movement(option_attrivute, option_container, title):
          
          
     # select 태그가 경을 경우 button 데이터 추출
-    else:
-    
-        for optionContainer in options:
+    for child in idontKnowWhyThisDo:
+
+        try:
+            option = child.find_element(By.TAG_NAME, 'button')       
+            check_button = filter_button(option.text)
+            
+            if check_button:
+                continue
             
             is_gray = False
         
-            try:
+            color = option.value_of_css_property("color")
             
-                optionButton = optionContainer.find_element(By.XPATH, "//button")
-                
-                color = optionButton.value_of_css_property("color")
-                
-                rgb = tuple(map(int, color.strip("rgba()").split(",")))
-                
-                is_gray = all(rgb[i] >= 200 for i in range(3))
+            rgb = tuple(map(int, color.strip("rgba()").split(",")))
+            
+            is_gray = all(rgb[i] >= 101 for i in range(3))
         
-            except Exception as e:
-                print("button 없음")
 
             if is_gray:
-                품절옵션.append("품절")
+                품절옵션.append(f"{option.text} = 품절")
             else:
-                품절옵션.append(optionContainer.text)
+                품절옵션.append(option.text)
+                
+        except Exception as e:
+            print("button 없음")
+            품절옵션.append(child.text)
             
         
     data_sheet.append(품절옵션)
