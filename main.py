@@ -121,7 +121,8 @@ def movement(option_attrivute, option_container, title):
     for child in idontKnowWhyThisDo:
 
         try:
-            option = child.find_element(By.TAG_NAME, 'button')       
+            option = child.find_element(By.XPATH, './/button')
+            
             check_button = filter_button(option.text)
             
             if check_button:
@@ -137,7 +138,7 @@ def movement(option_attrivute, option_container, title):
         
 
             if is_gray:
-                품절옵션.append(f"{option.text} = 품절")
+                품절옵션.append("품절")
             else:
                 품절옵션.append(option.text)
                 
