@@ -34,6 +34,20 @@ chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
 
 service = webdriver.ChromeService(executable_path='C:\chrome-win64\chrome.exe')
 
+# =============================클롤링 변수 =================
+data_start_row = 1
+
+url = ""
+
+attribute = ""
+attribute_value = ""
+
+option_attrivute = ""
+option_container = ""
+
+product_detail_type = ""
+# =============================클롤링 변수 =================
+
 def remove_none_img(imgs):
         filer_img = []
         
@@ -77,15 +91,34 @@ def filter_button(text):
 def celar_text(text):
     return text.replace("\n", "").replace("\t", "").replace("\r", "").strip()
 
-def movement(option_attrivute, option_container, title):    
+def check_color(element):
+
+    color = element.value_of_css_property("color")
+    
+    rgb = tuple(map(int, color.strip("rgba()").split(",")))
+    
+    is_gray = all(rgb[i] >= 101 for i in range(3))
+    
+    return is_gray
+
+def find_text_elements(container, text):
+    return container.find_element(By.XPATH, f".//*[contains(text(), '{text}')]")
+    
+
+def movement(title):    
     # grid grid-cols-6
     
     # 렌더링 대기
     time.sleep(2)
     
     # 옵션 컨테이너
-    container =  b.find_element(By.XPATH, f"//*[@{option_attrivute}='{option_container}']")
-    idontKnowWhyThisDo = container.find_elements(By.XPATH, "./*")
+    try:
+        container =  b.find_element(By.XPATH, f"//*[@{option_attrivute}='{option_container}']")
+        idontKnowWhyThisDo = container.find_elements(By.XPATH, "./*")
+    except Exception as e:
+        print("상품 설정 데이터 이외의 상품")
+        b.back()
+        return
        
     품절옵션 = []
     
@@ -97,31 +130,63 @@ def movement(option_attrivute, option_container, title):
     # selects_tags = container.find_elements(By.XPATH, "//select")
     selects_tags = []
     
-    for t in idontKnowWhyThisDo:
-        try:
-            select = t.find_element(By.XPATH, ".//select")
-            selects_tags.append(select)
-        except Exception as e:
-            print("")
     
-    # select 태그가 있을 경우 option 데이터 추출
-    if len(selects_tags) > 0:
+    if product_detail_type == "select":
+        
+        for t in idontKnowWhyThisDo:
+            try:
+                select = t.find_element(By.XPATH, ".//select")
+                selects_tags.append(select)
+            except Exception as e:
+                print("")
     
-        for select in selects_tags:
-            
-            b.execute_script("arguments[0].style.display = 'block';", select)
+        # select 태그가 있을 경우 option 데이터 추출
+        if len(selects_tags) > 0:
         
-        options = container.find_elements(By.XPATH, f".//option")
-        
-        for option in options:
-            text = celar_text(option.text)
+            for select in selects_tags:
+                
+                b.execute_script("arguments[0].style.display = 'block';", select)
             
-            if text != "" and "선택" not in text:
-                품절옵션.append(text)
-         
-         
-    # select 태그가 경을 경우 button 데이터 추출
+            options = container.find_elements(By.XPATH, f".//option")
+            
+            for option in options:
+                text = celar_text(option.text)
+                
+                if text != "" and "선택" not in text:
+                    품절옵션.append(text)
+        
+        # select 태그 없이 구현되어 있을 경우
+        else:
+            
+            for t in idontKnowWhyThisDo:
+                try:
+                    b.execute_script("arguments[0].click();", t)
+                    
+                    time.sleep(1)
+                    
+                    # temp__container =  b.find_element(By.XPATH, f"//*[@{option_attrivute}='{option_container}']")
+                    temp__container = b.find_element(By.XPATH, f"//*[contains(@{option_attrivute},'{option_container}')]")
+                    
+                    
+                    size_list = temp__container.text.strip().split("\n")
+                    
+                    for size in size_list:
+                        size_element = temp__container.find_element(By.XPATH, f".//*[contains(text(), '{size}')]")
+                        
+                        is_gray = check_color(size_element)
+                        
+                        if is_gray:
+                            품절옵션.append("품절")
+                        else:
+                            품절옵션.append(size_element.text)
+                                          
+                except Exception as e:
+                    print("")
+    
     else:
+        print("not select")
+         
+        # select 태그가 경을 경우 button 데이터 추출
         for child in idontKnowWhyThisDo:
 
             try:
@@ -184,7 +249,7 @@ def scroll_down():
     
     last_height = new_height
         
-def product_search(search_product, option_attrivute, option_container):
+def product_search(search_product):
     
     try:
     
@@ -214,7 +279,7 @@ def product_search(search_product, option_attrivute, option_container):
             b.execute_script("arguments[0].click();", click_element)
             
             print(title)
-            movement(option_attrivute, option_container, title.replace("\n", ""))
+            movement(title.replace("\n", ""))
             
     except Exception as e:
         
@@ -240,14 +305,6 @@ if __name__ == '__main__':
         data_sheet = data_excel.active
         
         
-        data_start_row = 1
-        
-        url = ""
-        attribute = ""
-        attribute_value = ""
-        option_attrivute = ""
-        option_container = ""
-        
         if i > data_start_row:
         # if i == 5:
         
@@ -255,19 +312,21 @@ if __name__ == '__main__':
             
             url = row[0]
             
-            if row[2]:
+            if row[3]:
                 attribute = "id"
-                attribute_value = row[2]
+                attribute_value = row[3]
             else:
                 attribute = "class"
-                attribute_value = row[3]
+                attribute_value = row[4]
                 
-            if row[4]:
+            if row[5]:
                 option_attrivute = "id"
-                option_container = row[4]
+                option_container = row[5]
             else:
                 option_attrivute = "class"
-                option_container = row[5]
+                option_container = row[6]
+                
+            product_detail_type = row[2]
                 
             b = webdriver.Chrome(options=chrome_options)
             b.get(f"{url}")
@@ -281,7 +340,7 @@ if __name__ == '__main__':
                 
                 while True:
                     
-                    product_search(search_product, option_attrivute, option_container)
+                    product_search(search_product)
                     res = scroll_down()
                     
                     if res:
