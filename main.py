@@ -294,45 +294,45 @@ file_name = ""
 if __name__ == '__main__':
     
     
-    for i, row in enumerate(sheet.iter_rows(values_only=True)):
-        
-        # 2번쨰 Column이 o이면 실행, x이면 실행 안함
-        if row[1] == "x":
-            continue
-        
-        # 엑셀 파일 생성
-        data_excel = Workbook()
-        data_sheet = data_excel.active
-        
-        
-        if i > data_start_row:
-        # if i == 5:
-        
-            print("Row", i, ":", row)
+        for i, row in enumerate(sheet.iter_rows(values_only=True)):
             
-            url = row[0]
+            # 2번쨰 Column이 o이면 실행, x이면 실행 안함
+            if row[1] == "x":
+                continue
             
-            if row[3]:
-                attribute = "id"
-                attribute_value = row[3]
-            else:
-                attribute = "class"
-                attribute_value = row[4]
+            # 엑셀 파일 생성
+            data_excel = Workbook()
+            data_sheet = data_excel.active
+            
+            
+            if i > data_start_row:
+            # if i == 5:
+            
+                print("Row", i, ":", row)
                 
-            if row[5]:
-                option_attrivute = "id"
-                option_container = row[5]
-            else:
-                option_attrivute = "class"
-                option_container = row[6]
+                url = row[0]
                 
-            product_detail_type = row[2]
-                
-            b = webdriver.Chrome(options=chrome_options)
-            b.get(f"{url}")
+                if row[3]:
+                    attribute = "id"
+                    attribute_value = row[3]
+                else:
+                    attribute = "class"
+                    attribute_value = row[4]
+                    
+                if row[5]:
+                    option_attrivute = "id"
+                    option_container = row[5]
+                else:
+                    option_attrivute = "class"
+                    option_container = row[6]
+                    
+                product_detail_type = row[2]
+                    
+                b = webdriver.Chrome(options=chrome_options)
+                b.get(f"{url}")
 
-            data_sheet.append([url])
-            file_name = url.replace("https://", "").replace("http://", "").replace(".html", "").replace("/", "").replace("?", "")
+                data_sheet.append([url])
+                file_name = url.replace("https://", "").replace("http://", "").replace(".html", "").replace("/", "").replace("?", "")
 
             try:
                 
